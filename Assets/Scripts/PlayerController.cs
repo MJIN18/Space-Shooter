@@ -19,22 +19,31 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private int _lives = 3;
     [SerializeField] private int _score;
     private SpawnManager _spawnManager;
+    private GameManager _gameManager;
     private UIManager _uiManager;
     [SerializeField] private bool _isTripleShotActive = false;
     // [SerializeField] private bool _isSpeedPowerUpActive = false;
     [SerializeField] private bool _isShieldPowerUpActive = false;
 
+    public bool _isPlayerOne = false;
+    public bool _isPlayerTwo = false;
 
     // Start is called before the first frame update
     void Start()
     {
         _spawnManager = GameObject.Find("Spawn Manager").GetComponent<SpawnManager>();
+        _gameManager = GameObject.Find("Game Manager").GetComponent<GameManager>();
         _uiManager = GameObject.Find("Canvas").GetComponent<UIManager>();
         _audioSource = GetComponent<AudioSource>();
+
 
         if (_spawnManager == null)
         {
             Debug.LogError("The Spawn Manager is NULL.");
+        }
+        if (_gameManager == null)
+        {
+            Debug.LogError("The Game Manager is NULL.");
         }
         if (_uiManager == null)
         {
@@ -44,9 +53,9 @@ public class PlayerController : MonoBehaviour
         {
             Debug.LogError("The AudioSource on the player is NULL.");
         }
-        else
+        if (!_gameManager.isCoOpModeActive)
         {
-            
+            transform.position = new Vector3(0, 0, 0);
         }
     }
 
@@ -56,25 +65,84 @@ public class PlayerController : MonoBehaviour
         // Player Movement
         PlayerMovement();
 
-        if (Input.GetKeyDown(KeyCode.Space) && Time.time > _nextFire)
+        if (_gameManager.isCoOpModeActive)
         {
-            FireLaser();
+            if (_isPlayerOne && Input.GetKeyDown(KeyCode.Space) && Time.time > _nextFire)
+            {
+                FireLaser();
+            }
+            if (_isPlayerTwo && Input.GetKeyDown(KeyCode.RightShift) && Time.time > _nextFire)
+            {
+                FireLaser();
+            }
         }
+        else
+        {
+            if (Input.GetKeyDown(KeyCode.Space) && Time.time > _nextFire)
+            {
+                FireLaser();
+            }
+        }
+
     }
 
     void PlayerMovement()
     {
-        float horizontalInput;
-        float verticalInput;
-        horizontalInput = Input.GetAxis("Horizontal");
-        verticalInput = Input.GetAxis("Vertical");
+        if (!_gameManager.isCoOpModeActive)
+        {
+            float horizontalInput;
+            float verticalInput;
+            horizontalInput = Input.GetAxis("Horizontal");
+            verticalInput = Input.GetAxis("Vertical");
 
-        //transform.Translate(Vector3.right * horizontalInput * _speed * Time.deltaTime);
-        //transform.Translate(Vector3.up * verticalInput * _speed * Time.deltaTime);
+            //transform.Translate(Vector3.right * horizontalInput * _speed * Time.deltaTime);
+            //transform.Translate(Vector3.up * verticalInput * _speed * Time.deltaTime);
 
-        Vector3 direction = new Vector3(horizontalInput, verticalInput, 0);
+            Vector3 direction = new Vector3(horizontalInput, verticalInput, 0);
 
-        transform.Translate(direction * _speed * Time.deltaTime);
+            transform.Translate(direction * _speed * Time.deltaTime);
+        }
+        else
+        {
+            if (_isPlayerOne)
+            {
+                if (Input.GetKey(KeyCode.W))
+                {
+                    transform.Translate(Vector3.up * _speed * Time.deltaTime);
+                }
+                if (Input.GetKey(KeyCode.S))
+                {
+                    transform.Translate(Vector3.down * _speed * Time.deltaTime);
+                }
+                if (Input.GetKey(KeyCode.D))
+                {
+                    transform.Translate(Vector3.right * _speed * Time.deltaTime);
+                }
+                if (Input.GetKey(KeyCode.A))
+                {
+                    transform.Translate(Vector3.left * _speed * Time.deltaTime);
+                }
+            }
+            else if (_isPlayerTwo)
+            {
+                if (Input.GetKey(KeyCode.UpArrow))
+                {
+                    transform.Translate(Vector3.up * _speed * Time.deltaTime);
+                }
+                if (Input.GetKey(KeyCode.DownArrow))
+                {
+                    transform.Translate(Vector3.down * _speed * Time.deltaTime);
+                }
+                if (Input.GetKey(KeyCode.RightArrow))
+                {
+                    transform.Translate(Vector3.right * _speed * Time.deltaTime);
+                }
+                if (Input.GetKey(KeyCode.LeftArrow))
+                {
+                    transform.Translate(Vector3.left * _speed * Time.deltaTime);
+                }
+            }
+        }
 
         // Player Movement Constraints
         MovementConstraints();
@@ -108,7 +176,7 @@ public class PlayerController : MonoBehaviour
         Vector3 offset;
         _nextFire = Time.time + _fireRate;
         offset = transform.position + new Vector3(0, 1.05f, 0);
-        
+
         if (_isTripleShotActive)
         {
             Instantiate(_tripleLaserPrefab, transform.position, Quaternion.identity);
@@ -131,9 +199,11 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            _lives -= 1; 
+            _lives -= 1;
+
             _uiManager.UpdateLives(_lives);
-            switch(_lives)
+
+            switch (_lives)
             {
                 case 2:
                     _rightEngine.SetActive(true);
@@ -188,5 +258,9 @@ public class PlayerController : MonoBehaviour
     private void GameOver()
     {
         _uiManager.GameOverSequence();
+        if (_gameManager.isCoOpModeActive == false)
+        {
+            _uiManager.CheckForBestScore();
+        }
     }
 }

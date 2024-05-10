@@ -7,16 +7,33 @@ public class PowerUp : MonoBehaviour
     [SerializeField] private float _speed = 3.0f;
     [SerializeField] private int _powerupID;
     private float _lowerBound = -4.5f;
-    PlayerController player;
+    private List<PlayerController> _player;
+    private GameManager _gameManager;
     [SerializeField] private AudioClip _powerupClip;
 
     // Start is called before the first frame update
     void Start()
     {
-        player = GameObject.Find("Player").GetComponent<PlayerController>();
-        if(player == null)
+        _gameManager = GameObject.Find("Game Manager").GetComponent<GameManager>();
+        _player = new List<PlayerController>();
+
+        if (_gameManager.isCoOpModeActive)
         {
-            Debug.LogError("Player is NULL.");
+            _player.Add(GameObject.Find("Player One").GetComponent<PlayerController>());
+            _player.Add(GameObject.Find("Player Two").GetComponent<PlayerController>());
+        }
+        else
+        {
+            _player.Add(GameObject.Find("Player").GetComponent<PlayerController>());
+        }
+
+        if (_player.Count == 0)
+        {
+            Debug.LogError("No players found.");
+        }
+        if(_gameManager == null)
+        {
+            Debug.LogError("Game Manager is NULL.");
         }
     }
 
@@ -39,27 +56,46 @@ public class PowerUp : MonoBehaviour
     {
         if (other.gameObject.CompareTag("Player"))
         {
-            if (player != null)
+            if (_player != null)
             {
-                switch (_powerupID)
+                if (_gameManager.isCoOpModeActive)
                 {
-                    case 0:
-                        player.TripleShotActive();
-                        break;
-                    case 1:
-                        player.SpeedPowerUpActive();
-                        break;
-                    case 2:
-                        player.ShieldsActive();
-                        break;
-                    default:
-                        Debug.Log("Default Value");
-                        break;               
+                    if (other.gameObject.name == "Player One")
+                    {
+                        ActivatePowerups(0);
+                    }
+                    else if (other.gameObject.name == "Player Two")
+                    {
+                        ActivatePowerups(1);
+                    }
                 }
-
+                else
+                {
+                    ActivatePowerups(0);
+                }
             }
             AudioSource.PlayClipAtPoint(_powerupClip, transform.position);
             Destroy(gameObject);
         }
     }
+    void ActivatePowerups(int playerNum)
+    {
+        switch (_powerupID)
+        {
+            case 0:
+                _player[playerNum].TripleShotActive();
+                break;
+            case 1:
+                _player[playerNum].SpeedPowerUpActive();
+                break;
+            case 2:
+                _player[playerNum].ShieldsActive();
+                break;
+            default:
+                Debug.Log("Default Value");
+                break;
+        }
+    }
 }
+
+

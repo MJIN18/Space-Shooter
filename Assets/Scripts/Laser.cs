@@ -13,7 +13,7 @@ public class Laser : MonoBehaviour
 
     private void Start()
     {
-        player = GameObject.Find("Player").GetComponent<PlayerController>();
+        player = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerController>();
         if (player == null)
         {
             Debug.LogError("Player is NULL.");

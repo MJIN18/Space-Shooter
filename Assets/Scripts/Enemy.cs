@@ -11,19 +11,34 @@ public class Enemy : MonoBehaviour
     [SerializeField] private GameObject _laserPrefab;
     [SerializeField] private float _fireRate = 3.0f;
     [SerializeField] private float _nextFire = -1f;
-    private PlayerController player;
+    private List<PlayerController> _player;
     private Animator _animator;
+    private GameManager _gameManager;
     [SerializeField] private AudioSource _audioSource;
 
     // Start is called before the first frame update
     void Start()
     {
-        player = GameObject.Find("Player").GetComponent<PlayerController>();
+        _gameManager = GameObject.Find("Game Manager").GetComponent<GameManager>();
+        
+        _player = new List<PlayerController>();
+
+        if (_gameManager.isCoOpModeActive)
+        {
+            _player.Add(GameObject.Find("Player One").GetComponent<PlayerController>());
+            _player.Add(GameObject.Find("Player Two").GetComponent<PlayerController>());
+        }
+        else
+        {
+            _player.Add(GameObject.Find("Player").GetComponent<PlayerController>());
+        }
+
         _audioSource = GetComponent<AudioSource>();
 
-        if(player == null)
+
+        if(_player.Count == 0)
         {
-            Debug.LogError("Player is NULL.");
+            Debug.LogError("No players found.");
         }
         _animator = gameObject.GetComponent<Animator>();
         if (_animator == null)
@@ -33,6 +48,10 @@ public class Enemy : MonoBehaviour
         if(_audioSource == null)
         {
             Debug.LogError("The Audio Source on the enmy is NULL.");
+        }
+        if (_gameManager == null)
+        {
+            Debug.LogError("Game Manager is NULL.");
         }
     }
 
@@ -74,9 +93,23 @@ public class Enemy : MonoBehaviour
     {
         if (other.gameObject.CompareTag("Player"))
         {
-            if(player != null)
+            if(_player != null)
             {
-                player.Damage();
+                if (_gameManager.isCoOpModeActive)
+                {
+                    if(other.gameObject.name == "Player One")
+                    {
+                        _player[0].Damage();
+                    }
+                    else if (other.gameObject.name == "Player Two")
+                    {
+                        _player[1].Damage();
+                    }
+                }
+                else
+                {
+                    _player[0].Damage();
+                }
                 _speed = 0;
                 _animator.SetTrigger("OnEnemyDeath");
                 _audioSource.Play();
@@ -88,9 +121,9 @@ public class Enemy : MonoBehaviour
         if (other.gameObject.CompareTag("Laser"))
         {
             Destroy(other.gameObject);
-            if (player != null)
-            {
-                player.AddScore(10);
+            if (_player != null)
+            {             
+                    _player[0].AddScore(10);
             }
             _speed = 0;
             _animator.SetTrigger("OnEnemyDeath");
